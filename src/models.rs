@@ -22,10 +22,10 @@ impl Note {
     }
     pub async fn save(&self, pool: &PgPool) -> anyhow::Result<PgQueryResult> {
         let res = sqlx::query!(
-            r#"
+            "
             INSERT INTO notes (id, title, content, created_at) 
             VALUES ($1, $2, $3, $4);
-            "#,
+            ",
             self.id,
             self.title,
             self.content,
