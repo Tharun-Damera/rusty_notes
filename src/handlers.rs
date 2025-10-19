@@ -1,17 +1,41 @@
-use axum::extract::{Json, State};
+use anyhow::Result;
+use axum::{
+    extract::{Json, State},
+    http::StatusCode,
+    response::IntoResponse,
+};
+use chrono::Utc;
 use sqlx::PgPool;
+use uuid::Uuid;
 
-use crate::models::{CreateNote, Note};
+use crate::{
+    error::AppError,
+    models::{CreateNote, Note},
+};
 
 pub async fn create_note(
     State(pool): State<PgPool>,
     Json(payload): Json<CreateNote>,
-) -> Json<Note> {
-    let note = Note::new(payload.title, payload.content);
-    note.save(&pool).await.unwrap();
-    Json::from(note)
+) -> Result<impl IntoResponse, AppError> {
+    let note = sqlx::query_as::<_, Note>(
+        "INSERT INTO notes (id, title, content, created_at)
+        VALUES ($1, $2, $3, $4)
+        RETURNING *;",
+    )
+    .bind(Uuid::new_v4())
+    .bind(&payload.title)
+    .bind(&payload.content)
+    .bind(Utc::now())
+    .fetch_one(&pool)
+    .await?;
+
+    Ok((StatusCode::CREATED, Json(note)))
 }
 
-pub async fn get_notes(State(pool): State<PgPool>) -> Json<Vec<Note>> {
-    Json(Note::get_notes(&pool).await.unwrap())
+pub async fn get_notes(State(pool): State<PgPool>) -> Result<impl IntoResponse, AppError> {
+    let notes = sqlx::query_as::<_, Note>("SELECT * FROM notes;")
+        .fetch_all(&pool)
+        .await?;
+
+    Ok((StatusCode::OK, Json(notes)))
 }
