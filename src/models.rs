@@ -12,7 +12,7 @@ pub struct Note {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct CreateNote {
+pub struct NotePayload {
     pub title: String,
     pub content: String,
 }
