@@ -1,6 +1,6 @@
 use anyhow::Result;
 use axum::{
-    extract::{Json, State},
+    extract::{Json, Path, State},
     http::StatusCode,
     response::IntoResponse,
 };
@@ -38,4 +38,19 @@ pub async fn get_notes(State(pool): State<PgPool>) -> Result<impl IntoResponse, 
         .await?;
 
     Ok((StatusCode::OK, Json(notes)))
+}
+
+pub async fn get_note(
+    State(pool): State<PgPool>,
+    Path(id): Path<Uuid>,
+) -> Result<impl IntoResponse, AppError> {
+    let maybe_note = sqlx::query_as::<_, Note>("SELECT * FROM notes WHERE id=$1;")
+        .bind(id)
+        .fetch_optional(&pool)
+        .await?;
+
+    match maybe_note {
+        Some(note) => Ok((StatusCode::OK, Json(note))),
+        None => Err(AppError::NotFound(format!("Note {id} not found"))),
+    }
 }
