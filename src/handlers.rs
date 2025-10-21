@@ -84,6 +84,6 @@ pub async fn delete_note(
     if rows == 0 {
         Err(AppError::NotFound(format!("Note {id} not found")))
     } else {
-        Ok((StatusCode::NO_CONTENT))
+        Ok(StatusCode::NO_CONTENT)
     }
 }
